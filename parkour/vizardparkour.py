@@ -68,7 +68,7 @@ if __name__ == "__main__":
     viz.mouse.setVisible(False)
     viz.mouse.setTrap(True)
 
-    model = viz.add('parkour_mape10.glb')
+    model = viz.add('parkour_mape11.glb')
     model.setPosition(0, 0, 0.1)
     model.setScale(9, 9, 9)
     viz.MainView.collision(viz.ON)
