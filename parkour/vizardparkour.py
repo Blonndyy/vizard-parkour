@@ -3,6 +3,7 @@ import vizshape
 import vizcam
 import time
 import random
+import vizact
 
 planesize_x = 30
 planesize_y = 30
@@ -16,7 +17,9 @@ if __name__ == "__main__":
     viz.MainView.setPosition([0, 1.6, 0])
     walkNav = vizcam.WalkNavigate(forward = 'w', backward='s', left='a', right='d', moveScale=3.0, turnScale= 1)
     viz.cam.setHandler(walkNav)
+    
     viz.mouse.setVisible(False)
+    
     cam_box_size = [1, 1.6, 1]  
     camera_colbox = vizshape.addBox(size=cam_box_size, color=viz.RED)
     camera_colbox.setParent(viz.MainView)
