@@ -1,41 +1,87 @@
-import viz
+﻿import viz
 import vizshape
 import vizcam
-import time
-import random
+import vizact
+import math
+
 
 planesize_x = 30
 planesize_y = 30
-
 window_width = 1920
 window_height = 1080
 
-if __name__ == "__main__":
-    viz.go()
-    
-    viz.MainView.setPosition([0, 1.6, 0])
-    walkNav = vizcam.WalkNavigate(forward = 'w', backward='s', left='a', right='d', moveScale=3.0, turnScale= 1)
-    viz.cam.setHandler(walkNav)
-    viz.mouse.setVisible(False)
-    cam_box_size = [1, 1.6, 1]  
-    camera_colbox = vizshape.addBox(size=cam_box_size, color=viz.RED)
-    camera_colbox.setParent(viz.MainView)
-    camera_colbox.setPosition([0, 0, 0])
+walk_speed = 3.5
+player_height = 1.6
 
-    camera_colbox.alpha(1.0)
-    viz.MainView.collision(viz.ON)
+isJumping = False
+jumpHeight = 3.0
+jumpDuration = 0.8
+jumpStartY = 0.0
+jumpStartTime = 0.0
+jumpTimer = None
+
+def jump():
+    global isJumping, jumpStartTime, jumpStartY, jumpTimer
+    if not isJumping:
+        isJumping = True
+        jumpStartTime = viz.tick()
+        jumpStartY = viz.MainView.getPosition()[1]
+        jumpTimer = vizact.ontimer(0, updateJump)
+
+def updateJump():
+    global isJumping, jumpStartTime, jumpStartY, jumpTimer
+    if not isJumping:
+        return
+    elapsed = viz.tick() - jumpStartTime
+    progress = elapsed / jumpDuration
+    if progress >= 1.0:
+        currentPos = viz.MainView.getPosition()
+        viz.MainView.setPosition([currentPos[0], jumpStartY, currentPos[2]])
+        isJumping = False
+        if jumpTimer:
+            try:
+                jumpTimer.remove()
+            except Exception:
+                pass
+            jumpTimer = None
+        return
+    if progress <= 0.5:
+        t = progress * 2
+        height = jumpStartY + jumpHeight * (1 - (1 - t) ** 2)
+    else:
+        t = (progress - 0.5) * 2
+        height = jumpStartY + jumpHeight * (1 - t ** 2)
+    currentPos = viz.MainView.getPosition()
+    viz.MainView.setPosition([currentPos[0], height, currentPos[2]])
+
+if __name__ == "__main__":
     
+    navigator = vizcam.WalkNavigate(
+        forward='w',
+        backward='s',
+        left='a',
+        right='d',
+        moveScale=walk_speed,
+        turnScale=1.0
+    )
+    viz.cam.setHandler(navigator)
+    viz.mouse.setVisible(False)
+    viz.mouse.setTrap(True)
+
+    model = viz.add('parkour_mape10.glb')
+    model.setPosition(0, 0, 0.1)
+    model.setScale(9, 9, 9)
+    viz.MainView.collision(viz.ON)
+
+    vizact.onkeydown(' ', jump)
+
     viz.window.setSize(window_width, window_height)
     viz.clearcolor(viz.SKYBLUE)
-    
-    floor = vizshape.addPlane(size=(planesize_x, planesize_y))
-    floor.setPosition(0, 0, 0)
-    floor.color(viz.GREEN)
-    
-
 
     sun = viz.addLight()
-    sun.position(10, 20, 10)
+    sun.position(10, -10, 5)
     sun.color(viz.WHITE)
-    sun.intensity(1.5)
+    sun.intensity(2.5)
     sun.setShadowMode(viz.SHADOW_DEPTH_MAP)
+    # Start the Vizard main loop after initialization
+    viz.go()
