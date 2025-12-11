@@ -9,9 +9,18 @@ planesize_x = 30
 planesize_y = 30
 window_width = 1920
 window_height = 1080
-
 walk_speed = 3.5
 player_height = 1.6
+start_position = [0, 2, 0]
+
+# Adjust these to match your parkour map boundaries
+trigger_box = {
+    'min_x': -15,
+    'max_x': 15,
+    'min_z': -15,
+    'max_z': 15,
+    'fall_threshold': -10  
+}
 
 isJumping = False
 jumpHeight = 3.0
@@ -19,6 +28,9 @@ jumpDuration = 0.8
 jumpStartY = 0.0
 jumpStartTime = 0.0
 jumpTimer = None
+
+def respawn_player():
+    viz.MainView.setPosition(start_position)
 
 def jump():
     global isJumping, jumpStartTime, jumpStartY, jumpTimer
@@ -54,6 +66,18 @@ def updateJump():
     currentPos = viz.MainView.getPosition()
     viz.MainView.setPosition([currentPos[0], height, currentPos[2]])
 
+
+def check_fall_trigger():
+    player_pos = viz.MainView.getPosition()
+    player_x = player_pos[0]
+    player_y = player_pos[1]
+    player_z = player_pos[2]
+    
+    if (trigger_box['min_x'] <= player_x <= trigger_box['max_x'] and
+        trigger_box['min_z'] <= player_z <= trigger_box['max_z']):
+        if player_y < trigger_box['fall_threshold']:
+            respawn_player()
+
 if __name__ == "__main__":
     
     navigator = vizcam.WalkNavigate(
@@ -72,8 +96,10 @@ if __name__ == "__main__":
     model.setPosition(0, 0, 0.1)
     model.setScale(9, 9, 9)
     viz.MainView.collision(viz.ON)
-
+    
+    viz.MainView.setPosition(start_position)
     vizact.onkeydown(' ', jump)
+    vizact.ontimer(0.1, check_fall_trigger)
 
     viz.window.setSize(window_width, window_height)
     viz.clearcolor(viz.SKYBLUE)
@@ -83,5 +109,4 @@ if __name__ == "__main__":
     sun.color(viz.WHITE)
     sun.intensity(2.5)
     sun.setShadowMode(viz.SHADOW_DEPTH_MAP)
-    # Start the Vizard main loop after initialization
     viz.go()
