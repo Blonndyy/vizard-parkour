@@ -15,24 +15,11 @@ player_height = 1.8
 start_position = [0, 2, 0]
 
 isJumping = False
-jumpHeight = 10.0
-jumpDuration = 0.8
+jumpHeight = 20.0
+jumpDuration = 2
 jumpStartY = 0.0
 jumpStartTime = 0.0
 jumpTimer = None
-
-vizshape.addAxes()
-
-current_checkpoint = start_position.copy()
-checkpoints = [ss
-    {
-        'position': [10, 10, 40],  
-        'min_x': -25, 'max_x': 15,
-        'min_z': 20, 'max_z': 75,
-        'name': 'Checkpoint 1',
-        'reached': False
-    },
-]
 
 
 trigger_box = {
@@ -42,6 +29,19 @@ trigger_box = {
     'max_z': 75,
     'fall_threshold': 5  
 }
+
+current_checkpoint = start_position.copy()
+checkpoints = [
+    {
+        'respawn_position': [-6, 32, 60], 
+        'trigger_min_x': -10, 'trigger_max_x': -3,  
+        'trigger_min_z': 55, 'trigger_max_z': 62,   
+        'trigger_min_y': 30, 'trigger_max_y': 40,   
+        'name': 'Checkpoint 1',
+        'reached': False
+    },
+]
+
 
 
 
@@ -89,24 +89,22 @@ def check_fall_trigger():
     player_y = player_pos[1]
     player_z = player_pos[2]
     
-    for checkpoint in checkpoints:
-        if (checkpoint['min_x'] <= player_x <= checkpoint['max_x'] and
-            checkpoint['min_z'] <= player_z <= checkpoint['max_z'] and
-            player_y >= checkpoint['position'][1] - 2): 
-            if not checkpoint['reached']:  
-                checkpoint['reached'] = True
-                global current_checkpoint
-                current_checkpoint = checkpoint['position'].copy()
-                print(f"Checkpoint reached: {checkpoint['name']}")
-        else:
-            
-            checkpoint['reached'] = False
-    
-    
     if (trigger_box['min_x'] <= player_x <= trigger_box['max_x'] and
         trigger_box['min_z'] <= player_z <= trigger_box['max_z']):
         if player_y <= trigger_box['fall_threshold']:
-            respawn_player()
+            respawn_player()   
+            
+    for checkpoint in checkpoints:
+        if (checkpoint['trigger_min_x'] <= player_x <= checkpoint['trigger_max_x'] and
+            checkpoint['trigger_min_z'] <= player_z <= checkpoint['trigger_max_z'] and
+            checkpoint['trigger_min_y'] <= player_y <= checkpoint['trigger_max_y']): 
+            if not checkpoint['reached']:  
+                checkpoint['reached'] = True
+                global current_checkpoint
+                current_checkpoint = checkpoint['respawn_position'].copy()
+                print(f"Checkpoint reached: {checkpoint['name']}")
+    
+
 
 if __name__ == "__main__":
     
@@ -126,39 +124,11 @@ if __name__ == "__main__":
     model.setPosition(0, 0, 0.1)
     model.setScale(9, 9, 9)
     viz.MainView.collision(viz.ON)
-    
 
-    checkpoint_colors = [
-        [0, 1, 0],    # Green for Start
-        [0, 0, 1],    # Blue for Checkpoint 1
-        [1, 1, 0],    # Yellow for Checkpoint 2
-        [1, 0, 1],    # Magenta for Checkpoint 3
-    ]
-    
-    for i, checkpoint in enumerate(checkpoints):
-        
-        cube_width = checkpoint['max_x'] - checkpoint['min_x']
-        cube_depth = checkpoint['max_z'] - checkpoint['min_z']
-        cube_height = 3  # Height of the checkpoint cube
-        
-        # Calculate center position
-        cube_center_x = (checkpoint['min_x'] + checkpoint['max_x']) / 2
-        cube_center_z = (checkpoint['min_z'] + checkpoint['max_z']) / 2
-        cube_center_y = checkpoint['position'][1] + cube_height / 2
-        
-        # Create cube
-        checkpoint_cube = vizshape.addBox([cube_width, cube_height, cube_depth])
-        checkpoint_cube.setPosition(cube_center_x, cube_center_y, cube_center_z)
-        
-        # Set color
-        color = checkpoint_colors[i % len(checkpoint_colors)]
-        checkpoint_cube.color(color)
-        checkpoint_cube.alpha(0.4)  # Semi-transparent
-    
 
     viz.MainView.setPosition(start_position)
     vizact.onkeydown(' ', jump)
-    vizact.ontimer(0, check_fall_trigger)
+    vizact.ontimer(0.1, check_fall_trigger)
 
     viz.window.setSize(window_width, window_height)
     viz.clearcolor(viz.SKYBLUE)
