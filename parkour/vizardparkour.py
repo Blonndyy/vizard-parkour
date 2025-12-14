@@ -7,8 +7,9 @@ import math
 
 planesize_x = 30
 planesize_y = 30
-window_width = 1920
-window_height = 1080
+window_width = 1080
+window_height = 960
+
 
 walk_speed = 3.5
 player_height = 1.8
@@ -31,16 +32,15 @@ trigger_box = {
 }
 
 current_checkpoint = start_position.copy()
-checkpoints = [
-    {
-        'respawn_position': [-6, 32, 60], 
+checkpoints = {
+        'respawn_position': [-6, 40, 60], 
         'trigger_min_x': -10, 'trigger_max_x': -3,  
         'trigger_min_z': 55, 'trigger_max_z': 62,   
         'trigger_min_y': 30, 'trigger_max_y': 40,   
         'name': 'Checkpoint 1',
         'reached': False
     },
-]
+
 
 
 
@@ -89,11 +89,6 @@ def check_fall_trigger():
     player_y = player_pos[1]
     player_z = player_pos[2]
     
-    if (trigger_box['min_x'] <= player_x <= trigger_box['max_x'] and
-        trigger_box['min_z'] <= player_z <= trigger_box['max_z']):
-        if player_y <= trigger_box['fall_threshold']:
-            respawn_player()   
-            
     for checkpoint in checkpoints:
         if (checkpoint['trigger_min_x'] <= player_x <= checkpoint['trigger_max_x'] and
             checkpoint['trigger_min_z'] <= player_z <= checkpoint['trigger_max_z'] and
@@ -103,6 +98,19 @@ def check_fall_trigger():
                 global current_checkpoint
                 current_checkpoint = checkpoint['respawn_position'].copy()
                 print(f"Checkpoint reached: {checkpoint['name']}")
+                print(f"Checkpoint coordinate: {current_checkpoint}")
+                print(f"Checkpoint reached: {checkpoint['name']}")    
+    
+    if (trigger_box['min_x'] <= player_x <= trigger_box['max_x'] and
+        trigger_box['min_z'] <= player_z <= trigger_box['max_z']):
+        if player_y <= trigger_box['fall_threshold']:
+            print(current_checkpoint)
+            respawn_player()
+            print(f"collision x={player_x}")
+            print(f"collision z={player_z}")
+            print(f"collision y={player_y}")
+            
+
     
 
 
