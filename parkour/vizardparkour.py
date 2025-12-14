@@ -32,8 +32,9 @@ trigger_box = {
 }
 
 current_checkpoint = start_position.copy()
-checkpoints = {
-        'respawn_position': [-6, 40, 60], 
+checkpoints = [
+    {
+        'respawn_position': [-6, 32, 60], 
         'trigger_min_x': -10, 'trigger_max_x': -3,  
         'trigger_min_z': 55, 'trigger_max_z': 62,   
         'trigger_min_y': 30, 'trigger_max_y': 40,   
@@ -128,7 +129,7 @@ if __name__ == "__main__":
     viz.mouse.setVisible(False)
     viz.mouse.setTrap(True)
 
-    model = viz.add('parkour_mape11.glb')
+    model = viz.add('Parkor_map_13.glb')
     model.setPosition(0, 0, 0.1)
     model.setScale(9, 9, 9)
     viz.MainView.collision(viz.ON)
