@@ -129,7 +129,7 @@ if __name__ == "__main__":
     viz.mouse.setVisible(False)
     viz.mouse.setTrap(True)
 
-    model = viz.add('Parkor_map_13.glb')
+    model = viz.add('parkor_map_13.glb')
     model.setPosition(0, 0, 0.1)
     model.setScale(9, 9, 9)
     viz.MainView.collision(viz.ON)
