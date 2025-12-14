@@ -41,7 +41,7 @@ checkpoints = [
         'name': 'Checkpoint 1',
         'reached': False
     },
-
+]
 
 
 
