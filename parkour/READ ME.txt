@@ -1,0 +1,30 @@
+Vizard 7 Parkour
+
+A small first-person parkour project made with Vizard 7.  
+Includes movement, jumping, checkpoints, and a pause menu.
+
+How to Run
+1. Install Vizard 7.
+2. Put `main.py`, `player.glb`, and `parkour_map_13.glb` in the same folder.
+3. Open `main.py` in Vizard and run.
+
+Controls
+-W / A / S / D = Move
+-Mouse = Look around
+-Space = Jump
+- ` = Pause menu (Continue / Restart / Exit)
+
+Features
+- Player movement with collision
+- Jumping & gravity
+- Checkpoints and respawn
+- Pause menu with mouse support
+- Simple lighting and shadows
+
+Config Options
+Change values at the top of the script:
+- `MOVE_SPEED` = Walk speed
+- `JUMP_VELOCITY` = Jump strength
+- `GRAVITY` = Gravity force
+- `START_POSITION` = Spawn point
+- `window_width`, `window_height` = Window size
