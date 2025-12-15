@@ -3,133 +3,118 @@ import vizshape
 import vizcam
 import vizact
 import math
+import vizinfo
 
 planesize_x = 30
 planesize_y = 30
 window_width = 1080
 window_height = 960
 
-walk_speed = 3.5
-player_height = 1.8
-start_position = [0, 5, 0]
+MOVE_SPEED = 5
+START_POSITION = [0, 5, 0]
+PLAYER_HEIGHT = 1.82
+JUMP_VELOCITY =8.5
+GRAVITY = 9.8
 
-gravity = -9.8         
-jump_speed = 8         
-vertical_velocity = 0.0
-grounded = True
+y_velocity = 0.0
+viz.clearcolor(viz.SKYBLUE)
+TURN_SPEED = 60
+player = viz.addChild('player.glb')
+view = viz.MainView
+player.collideMesh()
 
-walk_speed = 10
-player_height = 1.8
-
-viz.mouse.setVisible(False)
-viz.mouse.setTrap(True)
-
-def move_player():
-    step = walk_speed * viz.getFrameElapsed()
-    m = viz.MainView.getMatrix()
+def get_ground_height():
     pos = viz.MainView.getPosition()
-    x, y, z = pos
+    feet_y = pos[1] - PLAYER_HEIGHT
+    info = viz.intersect([pos[0], feet_y + 0.1, pos[2]], [pos[0], feet_y - 0.5, pos[2]])
+    return info.point[1] + PLAYER_HEIGHT if info.valid else None
 
-    forward = [m[8], m[9], m[10]]
-    right = [m[0], m[1], m[2]]
 
-    new_x, new_y, new_z = x, y, z
+def can_move(local_dir, distance=0.5):
+    x, y, z = viz.MainView.getPosition()
+    origin = [x, y, z]
+    mat = view.getMatrix(viz.HEAD_ORI)
+    world_dir = mat.preMultVec(local_dir) 
+    info = viz.intersect(origin, world_dir)
+    if info.valid:
+        dist = math.dist(origin, info.point)
+        return dist > distance
+    return True 
 
+def updatemovement():
+    dt = viz.elapsed()
     if viz.key.isDown('w'):
-        target_x = x + forward[0] * step
-        target_y = y + forward[1] * step
-        target_z = z + forward[2] * step
-        hit = viz.intersect([x, y, z], forward)
-        if not hit.valid or math.dist([x,y,z], hit.point) > step:
-            new_x, new_y, new_z = target_x, target_y, target_z
-
-
-    if viz.key.isDown('s'):
-        target_x = x - forward[0] * step
-        target_y = y - forward[1] * step
-        target_z = z - forward[2] * step
-        hit = viz.intersect([x, y, z], [-forward[0], -forward[1], -forward[2]])
-        if not hit.valid or math.dist([x,y,z], hit.point) > step:
-            new_x, new_y, new_z = target_x, target_y, target_z
-
+        if can_move([0,0,1]):
+            view.move([0,0,MOVE_SPEED*dt], viz.HEAD_ORI)
+        else:
+            print("Blocked forward")
+    elif viz.key.isDown('s'):
+        if can_move([0,0,-1]):
+            view.move([0,0,-MOVE_SPEED*dt], viz.HEAD_ORI)
+        else:
+            print("Blocked backward")
 
     if viz.key.isDown('a'):
-        target_x = x - right[0] * step
-        target_y = y - right[1] * step
-        target_z = z - right[2] * step
-        hit = viz.intersect([x, y, z], [-right[0], -right[1], -right[2]])
-        if not hit.valid or math.dist([x,y,z], hit.point) > step:
-            new_x, new_y, new_z = target_x, target_y, target_z
-
-
-    if viz.key.isDown('d'):
-        target_x = x + right[0] * step
-        target_y = y + right[1] * step
-        target_z = z + right[2] * step
-        hit = viz.intersect([x, y, z], right)
-        if not hit.valid or math.dist([x,y,z], hit.point) > step:
-            new_x, new_y, new_z = target_x, target_y, target_z
-
-    viz.MainView.setPosition([new_x, new_y, new_z])
-
-vizact.ontimer(0, move_player)
-
-def check_ceiling():
-    x, y, z = viz.MainView.getPosition()
-
-
-    origin = [x, y, z]
-    direction = [0, 1, 0]
-
-    info = viz.intersect(origin, direction)
-    if info.valid:
-        hit_x, hit_y, hit_z = info.point
-        dist = math.dist(origin, info.point)
-        print(f"Ceiling detected at {dist:.2f} units above head at {info.point}")
-        return dist
-    else:
-        print("No ceiling detected above head")
-        return None
-def jump():
-    global grounded, vertical_velocity
-    if grounded:
-        dist = check_ceiling()
-        if dist is None or dist > player_height:
-            vertical_velocity = jump_speed
-            grounded = False
-            print("Jump initiated")
+        if can_move([-1,0,0]):
+            view.move([-MOVE_SPEED*dt,0,0], viz.HEAD_ORI)
         else:
-            print("Jump blocked: ceiling too close")
+            print("Blocked left")
+    elif viz.key.isDown('d'):
+        if can_move([1,0,0]):
+            view.move([MOVE_SPEED*dt,0,0], viz.HEAD_ORI)
+        else:
+            print("Blocked right")
+    player.setPosition(view.getPosition())
+    player.setEuler(view.getEuler(viz.HEAD_ORI))
+    player.setPosition([0.35,-1.2,0.2], viz.REL_LOCAL)
 
+vizact.ontimer(0,updatemovement)
 
+def mousemove(e):
+    euler = view.getEuler(viz.HEAD_ORI)
+    euler[0] += e.dx * 0.1   # yaw
+    euler[1] += -e.dy * 0.1  # pitch
+    euler[1] = viz.clamp(euler[1], -85.0, 85.0)
+    view.setEuler(euler, viz.HEAD_ORI)
 
+viz.callback(viz.MOUSE_MOVE_EVENT, mousemove)
+viz.mouse(viz.OFF)
+viz.mouse.setVisible(False)
+    
+def jump():
+    global y_velocity
+    ground_height = get_ground_height()
+    if ground_height is not None:
+        pos = viz.MainView.getPosition()
+        if abs(pos[1] - ground_height) < 0.001 and y_velocity == 0.0:
+            y_velocity = JUMP_VELOCITY
+        else:
+            print("Cannot jump")
+    else:
+        print("Cannot jump")
 
 def update_physics():
-    global grounded, vertical_velocity
-    x, y, z = viz.MainView.getPosition()
-    vertical_velocity += gravity * viz.getFrameElapsed()
-    y += vertical_velocity * viz.getFrameElapsed()
-    info = viz.intersect([x, y - player_height + 0.1, z], [0, -1, 0])
-    if info.valid:
-        ground_y = info.point[1]
-        if y <= ground_y + player_height:
-            y = ground_y + player_height
-            vertical_velocity = 0.0
-            grounded = True
-        else:
-            grounded = False
-    else:
-        grounded = False
-    viz.MainView.setPosition([x, y, z])
+    global y_velocity
+    pos = viz.MainView.getPosition()
+    dt = viz.getFrameElapsed()
     
-    
+    y_velocity -= GRAVITY * dt
+    new_y = pos[1] + y_velocity * dt
+
+    ground_height = get_ground_height()
+    if ground_height is not None and new_y <= ground_height and y_velocity < 0:
+        new_y = ground_height
+        y_velocity = 0.0
+    viz.MainView.setPosition([pos[0], new_y, pos[2]])
+
 def respawn_player():
     viz.MainView.collision(viz.OFF)
     viz.MainView.setPosition(current_checkpoint)
+    viz.MainView.setEuler([0,0,0], viz.HEAD_ORI)
     viz.MainView.collision(viz.ON)
     print(f"Respawned at: {current_checkpoint}")
     
-current_checkpoint = start_position.copy()
+current_checkpoint = START_POSITION.copy()
 checkpoints = [
     {
         'respawn_position': [-4, 30, 58], 
@@ -140,13 +125,10 @@ checkpoints = [
         'reached': False
     },
 ]
-
 def check_fall_trigger():
     global current_checkpoint 
-
     player_pos = viz.MainView.getPosition()
     player_x, player_y, player_z = player_pos
-    
     for checkpoint in checkpoints:
         if (checkpoint['trigger_min_x'] <= player_x <= checkpoint['trigger_max_x'] and
             checkpoint['trigger_min_z'] <= player_z <= checkpoint['trigger_max_z'] and
@@ -159,15 +141,73 @@ def check_fall_trigger():
                 
     if player_y <= 0:
         respawn_player()
+        
+esc_menu = None
+
+def show_menu():
+    global esc_menu
+    if esc_menu is None:
+        esc_menu = vizinfo.InfoPanel('Paused', align=viz.ALIGN_CENTER, icon=False)
+
+        btn_continue = viz.addButtonLabel('Continue')
+        btn_restart  = viz.addButtonLabel('Restart')
+        btn_exit     = viz.addButtonLabel('Exit')
+
+        esc_menu.addItem(btn_continue)
+        esc_menu.addItem(btn_restart)
+        esc_menu.addItem(btn_exit)
+
+        vizact.onbuttondown(btn_continue, continue_game)
+        vizact.onbuttondown(btn_restart, restart_game)
+        vizact.onbuttondown(btn_exit, exit_game)
+    else:
+        esc_menu.visible(viz.ON)
+
+    # Release mouse for menu interaction
+    viz.mouse.setTrap(False)
+    viz.mouse.setVisible(True)
+    viz.callback(viz.MOUSE_MOVE_EVENT, None)
+
+    movement_timer.setEnabled(False)
+    physics_timer.setEnabled(False)
+    fall_timer.setEnabled(False)
 
 
-if __name__ == "__main__":
-    viz.MainView.setPosition(start_position)
+def continue_game():
+    global esc_menu
+    if esc_menu:
+        esc_menu.visible(viz.OFF)
 
-    navigator = vizcam.WalkNavigate( 
-    )
-    viz.cam.setHandler(navigator)
+    viz.mouse.setTrap(True)
+    viz.mouse.setVisible(False)
+    viz.callback(viz.MOUSE_MOVE_EVENT, mousemove)
+
+    movement_timer.setEnabled(True)
+    physics_timer.setEnabled(True)
+    fall_timer.setEnabled(True)
+
+
+def restart_game():
+    global esc_menu
+    viz.MainView.setPosition(START_POSITION)
+    if esc_menu:
+        esc_menu.visible(viz.OFF)
+
+    viz.mouse.setTrap(True)
+    viz.mouse.setVisible(False)
+    viz.callback(viz.MOUSE_MOVE_EVENT, mousemove)
+
+    movement_timer.setEnabled(True)
+    physics_timer.setEnabled(True)
+    fall_timer.setEnabled(True)
+    print("Game restarted")
+
+
+def exit_game():
+    viz.quit()
     
+if __name__ == "__main__":
+    viz.MainView.setPosition(START_POSITION)
     viz.mouse.setVisible(False)
     viz.mouse.setTrap(True)
 
@@ -177,12 +217,14 @@ if __name__ == "__main__":
     model.collideMesh()
 
     viz.MainView.collision(viz.ON)
-  
-
+    viz.MainView.gravity(0)
     
-    vizact.ontimer(0, update_physics)
+    movement_timer = vizact.ontimer(0, updatemovement)
+    physics_timer  = vizact.ontimer(0, update_physics)
+    fall_timer     = vizact.ontimer(0.1, check_fall_trigger)
+
     vizact.onkeydown(' ', jump)
-    vizact.ontimer(0.1, check_fall_trigger)
+    vizact.onkeydown('`', show_menu)
 
     viz.window.setSize(window_width, window_height)
     viz.clearcolor(viz.BLUE)
@@ -193,4 +235,3 @@ if __name__ == "__main__":
     sun.intensity(2.5)
     sun.setShadowMode(viz.SHADOW_DEPTH_MAP)
     viz.go()
-    #okey then cast an ray in each y  x x- z z- direction and check the same thi
